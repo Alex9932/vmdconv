@@ -1,5 +1,9 @@
 ﻿/*
  * VMD animation convertor
+ * 
+ * -mdl <pmd/pmx file> For animation simulation
+ * -vmd <vmd file> Animation file
+ * -o <output file> gltf output file
 */
 
 #include <stdio.h>
@@ -20,7 +24,13 @@ static const char* CODE_NAMES[] = {
 #define CODENAME CODE_NAMES[0]
 #define BUILD    "11.05.2026"
 
+#define TEST_BUILD 1
+
 static uint32_t errors = 0;
+
+static const char* MDL_FILE = NULL;
+static const char* VMD_FILE = NULL;
+static const char* OUTPUT_FILE = NULL;
 
 static const char* ReadString(const char* path) {
 	FILE* file = fopen(path, "r");
@@ -82,9 +92,19 @@ static void printhelp() {
 }
 
 
-
+#if TEST_BUILD
+int _main(int argc, char** argv);
 int main(int argc, char** argv) {
 
+	int test_argc = 7;
+	const char* test_argv[] = { argv[0], "-mdl", "vmd/Model/Rin_Kagamine.pmd", "-vmd", "vmd/player/run.vmd", "-o", "anim.glb" };
+
+	_main(test_argc, (char**)test_argv);
+}
+int _main(int argc, char** argv) {
+#else
+int main(int argc, char** argv) {
+#endif
 	PrintBanner();
 
 	if (argc < 2) {
@@ -92,26 +112,38 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	if (strcmp(argv[1], "make") == 0 && argc > 2) {
-		printf("** Executing \"make\" command\n");
-		//MakeConfig(argv[2]);
-	} else if (strcmp(argv[1], "fetch") == 0) {
-		printf("** Executing \"fetch\" command\n");
-		//FetchList();
-	} else if (strcmp(argv[1], "squad") == 0) {
-		printf("** Executing \"squad\" command\n");
-		printf("\033[1;36m");
-		printf("**\n** MCU Development Squad:\n");
-		printf("** 1: Alex9932\n");
-		for (int i = 0; i < 4; i++) {
-			printf("** %d: %s\n", i + 2, CODE_NAMES[i]);
+	for (size_t i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+			OUTPUT_FILE = argv[i + 1];
+			i++;
 		}
-		printf("**\n");
-		printf("\033[0m");
-
-	} else {
-		printhelp();
+		else if (strcmp(argv[i], "-mdl") == 0 && i + 1 < argc) {
+			MDL_FILE = argv[i + 1];
+			i++;
+		}
+		else if (strcmp(argv[i], "-vmd") == 0 && i + 1 < argc) {
+			VMD_FILE = argv[i + 1];
+			i++;
+		}
+		else if (strcmp(argv[i], "-squad") == 0) {
+			printf("** Executing \"squad\" command\n");
+			printf("\033[1;36m");
+			printf("**\n** VMDCONV Development Squad:\n");
+			printf("** 1: Alex9932\n");
+			for (int i = 0; i < 4; i++) {
+				printf("** %d: %s\n", i + 2, CODE_NAMES[i]);
+			}
+			printf("**\n");
+			printf("\033[0m");
+		}
 	}
+
+	// Invalid parameters
+	if (MDL_FILE == NULL || VMD_FILE == NULL || OUTPUT_FILE == NULL) {
+		printhelp();
+		return 0;
+	}
+
 
 
 	printf("** Done with %d errors\n", errors);
