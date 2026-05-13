@@ -26,7 +26,7 @@ static const char* CODE_NAMES[] = {
 
 #define VERSION  "1.0"
 #define CODENAME CODE_NAMES[0]
-#define BUILD    "13.05.2026"
+#define BUILD    "14.05.2026"
 
 #define TEST_BUILD 1
 
@@ -36,6 +36,9 @@ static const char* MDL_FILE = NULL;
 static const char* VMD_FILE = NULL;
 static const char* OUTPUT_FILE = NULL;
 
+// Utility functions for reading/writing files - not used yet, but can be useful for future features
+// TODO: Move this to a separate file
+#if 0
 static const char* ReadString(const char* path) {
 	FILE* file = fopen(path, "r");
 	if (!file) {
@@ -66,6 +69,7 @@ static void WriteString(const char* path, const char* str) {
 		fclose(f);
 	}
 }
+#endif
 
 static void PrintBanner() {
 	const char* quotes[] = {
