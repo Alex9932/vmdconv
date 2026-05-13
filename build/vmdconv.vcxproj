@@ -90,11 +90,44 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\allocator.h" />
+    <ClInclude Include="..\src\animation.h" />
+    <ClInclude Include="..\src\animator.h" />
     <ClInclude Include="..\src\cJSON.h" />
+    <ClInclude Include="..\src\filesystem.h" />
+    <ClInclude Include="..\src\importer.h" />
+    <ClInclude Include="..\src\kinematicsmodel.h" />
+    <ClInclude Include="..\src\mmdimporter.h" />
+    <ClInclude Include="..\src\pmd.h" />
+    <ClInclude Include="..\src\pmx.h" />
+    <ClInclude Include="..\src\rendertypes.h" />
+    <ClInclude Include="..\src\rgmath.h" />
+    <ClInclude Include="..\src\rgmatrix.h" />
+    <ClInclude Include="..\src\rgstring.h" />
+    <ClInclude Include="..\src\rgtypes.h" />
+    <ClInclude Include="..\src\rgvector.h" />
+    <ClInclude Include="..\src\simulation.h" />
+    <ClInclude Include="..\src\utf8.h" />
+    <ClInclude Include="..\src\vmd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\allocator.cpp" />
+    <ClCompile Include="..\src\animation.cpp" />
+    <ClCompile Include="..\src\animator.cpp" />
     <ClCompile Include="..\src\cJSON.c" />
+    <ClCompile Include="..\src\filesystem.cpp" />
+    <ClCompile Include="..\src\kinematicsmodel.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\mmdimporter.cpp" />
+    <ClCompile Include="..\src\pmd.cpp" />
+    <ClCompile Include="..\src\pmx.cpp" />
+    <ClCompile Include="..\src\rgmath.cpp" />
+    <ClCompile Include="..\src\rgmatrix.cpp" />
+    <ClCompile Include="..\src\rgstring.cpp" />
+    <ClCompile Include="..\src\rgvector.cpp" />
+    <ClCompile Include="..\src\simulation.cpp" />
+    <ClCompile Include="..\src\utf8.cpp" />
+    <ClCompile Include="..\src\vmd.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

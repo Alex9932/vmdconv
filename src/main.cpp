@@ -91,14 +91,22 @@ static void PrintBanner() {
 
 static void printhelp() {
 	printf("\n** ~ ~ ~ VMD Animation convertor ~ ~ ~\n\n");
-	printf("** Usage:\n");
-	printf("**   TODO: make help screen!\n");
+	printf("** Arguments:\n");
+	printf("**   -mdl <pmd/pmx file>   For animation simulation\n");
+	printf("**   -vmd <vmd file>       Animation file\n");
+	printf("**   -o <output file>      gltf output file\n");
+	printf("**   -h                    Show this help message\n");
+	printf("** Usage example:\n");
+	printf("**   vmdconv -mdl model.pmd -vmd animation.vmd -o output.glb\n");
+	printf("**\n");
 }
 
 
 #if TEST_BUILD
 int _main(int argc, char** argv);
 int main(int argc, char** argv) {
+
+	// Test parameters - you can change these to test with different files
 
 	int test_argc = 7;
 	//const char* test_argv[] = { argv[0], "-mdl", "vmd/Model/Rin_Kagamine.pmd", "-vmd", "vmd/wavefile_v2.vmd", "-o", "anim.glb" };
@@ -143,16 +151,18 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	// Invalid parameters
-	if (MDL_FILE == NULL || VMD_FILE == NULL || OUTPUT_FILE == NULL) {
-		printhelp();
-		return 0;
-	}
-
 	printf("** Setup engine env\n");
 	Engine::STDAllocator* alloc = new Engine::STDAllocator("Default allocator");
 	Engine::SetDefaultAllocator(alloc);
 	Engine::Filesystem_Initialize(NULL);
+
+	// Invalid parameters
+	if (MDL_FILE == NULL || VMD_FILE == NULL || OUTPUT_FILE == NULL) {
+		printf("!! Invalid parameters! Use -h for help\n");
+		errors++;
+		//printhelp();
+		goto exit;
+	}
 
 	// Setup simulation
 
@@ -160,18 +170,25 @@ int main(int argc, char** argv) {
 	SimulationSetupInfo setupInfo = {};
 	setupInfo.model = MDL_FILE;
 	setupInfo.animation = VMD_FILE;
-	sim.Setup(&setupInfo);
+	if (!sim.Setup(&setupInfo)) {
+		printf("** Simulation setup failed\n");
+		errors++;
+		goto exit;
+	}
 
 	printf("** Simulating...\n");
 	Uint32 frame = 0;
 	while (!sim.Step(1.0 / 60.0)) {
 		// Simulation step
 		printf("\r** Frame: %d", frame);
+		fflush(stdout);
 		frame++;
 	}
 	printf("\n");
 
 	sim.Free();
+
+exit:
 	printf("** Done with %d errors\n", errors);
 
 	Engine::Filesystem_Destroy();
