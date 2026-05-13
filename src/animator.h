@@ -30,6 +30,12 @@ namespace Engine {
 
             RG_INLINE void PlayAnimation(Animation* animation) { PlayAnimation(animation, 0.075f); }
             RG_INLINE Animation* GetCurrentAnimation() { return this->current_animation; }
+            RG_INLINE Bool IsAnimationEnded() {
+				return
+                    this->current_animation &&
+                    !this->current_animation->IsRepeat() &&
+                    this->current_animation->GetTime() >= this->current_animation->GetLastFrame();
+            }
     };
 
 }

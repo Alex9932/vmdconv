@@ -12,6 +12,10 @@
 #include <string.h>
 #include <time.h>
 
+#include <allocator.h>
+#include <filesystem.h>
+#include <simulation.h>
+
 static const char* CODE_NAMES[] = {
 	"Perlica",    // v1.0 ⚡
 	// For future use xD 
@@ -22,7 +26,7 @@ static const char* CODE_NAMES[] = {
 
 #define VERSION  "1.0"
 #define CODENAME CODE_NAMES[0]
-#define BUILD    "11.05.2026"
+#define BUILD    "13.05.2026"
 
 #define TEST_BUILD 1
 
@@ -97,7 +101,8 @@ int _main(int argc, char** argv);
 int main(int argc, char** argv) {
 
 	int test_argc = 7;
-	const char* test_argv[] = { argv[0], "-mdl", "vmd/Model/Rin_Kagamine.pmd", "-vmd", "vmd/player/run.vmd", "-o", "anim.glb" };
+	//const char* test_argv[] = { argv[0], "-mdl", "vmd/Model/Rin_Kagamine.pmd", "-vmd", "vmd/wavefile_v2.vmd", "-o", "anim.glb" };
+	const char* test_argv[] = { argv[0], "-mdl", "..\\build\\vmd\\Model\\Miku_Hatsune.pmd", "-vmd", "..\\build\\vmd\\wavefile_v2.vmd", "-o", "anim.glb" };
 
 	_main(test_argc, (char**)test_argv);
 }
@@ -144,9 +149,32 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
+	printf("** Setup engine env\n");
+	Engine::STDAllocator* alloc = new Engine::STDAllocator("Default allocator");
+	Engine::SetDefaultAllocator(alloc);
+	Engine::Filesystem_Initialize(NULL);
 
+	// Setup simulation
 
+	Simulation sim;
+	SimulationSetupInfo setupInfo = {};
+	setupInfo.model = MDL_FILE;
+	setupInfo.animation = VMD_FILE;
+	sim.Setup(&setupInfo);
+
+	printf("** Simulating...\n");
+	Uint32 frame = 0;
+	while (!sim.Step(1.0 / 60.0)) {
+		// Simulation step
+		printf("\r** Frame: %d", frame);
+		frame++;
+	}
+	printf("\n");
+
+	sim.Free();
 	printf("** Done with %d errors\n", errors);
 
+	Engine::Filesystem_Destroy();
+	delete alloc;
 	return 0;
 }

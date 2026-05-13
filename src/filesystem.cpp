@@ -147,6 +147,7 @@ namespace Engine {
         rgLogInfo(RG_LOG_SYSTEM, "[FS] -> %s", name);
     }
 
+#if 0
     void FS_ReplaceSeparators(char* dst, String str) {
         size_t j = 0;
         Bool firstseparator = true;
@@ -167,6 +168,7 @@ namespace Engine {
             }
         }
     }
+#endif
 
 #if 0
     void FS_ReplaceSeparators(char* dst, String str) {
@@ -186,13 +188,15 @@ namespace Engine {
     }
 #endif
 
-#if 0
+#if 1
     void FS_ReplaceSeparators(char* dst, String src) {
         Uint32 len = (Uint32)SDL_strlen(src);
-        for (Uint32 i = 0; i < len; i++) {
+        Uint32 i = 0;
+        for (; i < len; i++) {
             if (src[i] != '\\') { dst[i] = src[i]; }
             else { dst[i] = '/'; }
         }
+        dst[i] = 0; // Terminate string
     }
 #endif
 

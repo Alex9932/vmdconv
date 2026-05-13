@@ -79,6 +79,7 @@ namespace Engine {
             RG_INLINE void SetRepeat(Bool r) { this->repeat = r; }
 
             RG_INLINE String GetName() { return this->m_name; }
+            RG_INLINE Bool IsRepeat() { return this->repeat; }
     };
 
 }
