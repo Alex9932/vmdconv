@@ -25,7 +25,8 @@ static void WriteString(const char* path, const char* str) {
 }
 
 static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
-	for (Uint32 i = 0; i < mdl->GetBoneCount(); i++) {
+	//for (Sint32 i = mdl->GetBoneCount() - 1; i >= 0; i--) {
+	for (Sint32 i = 0; i < mdl->GetBoneCount(); i++) {
 		Bone* bone = mdl->GetBone(i);
 		cJSON* node = cJSON_CreateObject();
 
@@ -36,14 +37,111 @@ static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
 		cJSON* s = cJSON_CreateFloatArray(scale, 3); // Scale
 
 		cJSON_AddStringToObject(node, "name", bone->name);
-		cJSON_AddNumberToObject(node, "index", i); // Custom property TODO: Remove this later
 		cJSON_AddItemToObject(node, "translation", p);
 		cJSON_AddItemToObject(node, "rotation", r);
 		cJSON_AddItemToObject(node, "scale", s);
-		if (bone->parent != -1) {
-			cJSON_AddNumberToObject(node, "parent", bone->parent);
-		}
+		//if (bone->parent != -1) {
+		//	cJSON_AddNumberToObject(node, "parent", bone->parent);
+		//}
 		cJSON_AddItemToArray(nodes, node);
+	}
+
+	//for (Sint32 i = mdl->GetBoneCount() - 1; i >= 0; i--) {
+	for (Sint32 i = 0; i < mdl->GetBoneCount(); i++) {
+		Bone* bone = mdl->GetBone(i);
+		if (bone->parent != -1) {
+			//cJSON* parentNode = cJSON_GetArrayItem(nodes, mdl->GetBoneCount() - bone->parent);
+			cJSON* parentNode = cJSON_GetArrayItem(nodes, bone->parent);
+			cJSON* children = cJSON_GetObjectItem(parentNode, "children");
+			if (!children) {
+				children = cJSON_CreateArray();
+				cJSON_AddItemToObject(parentNode, "children", children);
+			}
+			cJSON_AddItemToArray(children, cJSON_CreateNumber(i));
+		}
+	}
+}
+
+static void MakeAnimation(cJSON* anims, GLTFAnimExportInfo* info) {
+	cJSON* animation = cJSON_CreateObject();
+
+	cJSON* samplers = cJSON_CreateArray();
+	for (size_t i = 0; i < info->mdl->GetBoneCount(); i++) {
+		cJSON* p_sampler = cJSON_CreateObject();
+		cJSON_AddNumberToObject(p_sampler, "input", i * 3);
+		cJSON_AddNumberToObject(p_sampler, "output", i * 3 + 1);
+		cJSON_AddStringToObject(p_sampler, "interpolation", "LINEAR");
+		cJSON_AddItemToArray(samplers, p_sampler);
+
+		cJSON* r_sampler = cJSON_CreateObject();
+		cJSON_AddNumberToObject(r_sampler, "input", i * 3);
+		cJSON_AddNumberToObject(r_sampler, "output", i * 3 + 2);
+		cJSON_AddStringToObject(r_sampler, "interpolation", "LINEAR");
+		cJSON_AddItemToArray(samplers, r_sampler);
+	}
+	cJSON_AddItemToObject(animation, "samplers", samplers);
+
+	cJSON* channels = cJSON_CreateArray();
+	for (size_t i = 0; i < info->mdl->GetBoneCount(); i++) {
+		cJSON* p_channel = cJSON_CreateObject();
+		cJSON* p_target = cJSON_CreateObject();
+		cJSON_AddNumberToObject(p_target, "node", i);
+		cJSON_AddStringToObject(p_target, "path", "translation");
+		cJSON_AddNumberToObject(p_channel, "sampler", i * 2);
+		cJSON_AddItemToObject(p_channel, "target", p_target);
+		cJSON_AddItemToArray(channels, p_channel);
+
+		cJSON* r_channel = cJSON_CreateObject();
+		cJSON* r_target = cJSON_CreateObject();
+		cJSON_AddNumberToObject(r_target, "node", i);
+		cJSON_AddStringToObject(r_target, "path", "rotation");
+		cJSON_AddNumberToObject(r_channel, "sampler", i * 2 + 1);
+		cJSON_AddItemToObject(r_channel, "target", r_target);
+		cJSON_AddItemToArray(channels, r_channel);
+	}
+	cJSON_AddItemToObject(animation, "channels", channels);
+
+	cJSON_AddItemToArray(anims, animation);
+}
+
+static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
+	size_t offset = 0;
+
+	for (size_t i = 0; i < info->mdl->GetBoneCount(); i++) {
+
+		size_t keyframeCount = info->boneAnimations[i].keyframeCount;
+		size_t tsSize = sizeof(Float32) * keyframeCount;
+		size_t pSize = sizeof(vec3) * keyframeCount;
+		size_t rSize = sizeof(vec4) * keyframeCount;
+
+		cJSON* accessor_ts = cJSON_CreateObject();
+		//cJSON_AddNumberToObject(accessor_ts, "bufferView", i * 3);
+		cJSON_AddNumberToObject(accessor_ts, "bufferView", 0);
+		cJSON_AddNumberToObject(accessor_ts, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_ts, "byteOffset", offset);
+		cJSON_AddStringToObject(accessor_ts, "type", "SCALAR");
+		cJSON_AddNumberToObject(accessor_ts, "count", keyframeCount);
+		cJSON_AddItemToArray(accessors, accessor_ts);
+
+		cJSON* accessor_p = cJSON_CreateObject();
+		//cJSON_AddNumberToObject(accessor_p, "bufferView", i * 3 + 1);
+		cJSON_AddNumberToObject(accessor_p, "bufferView", 0);
+		cJSON_AddNumberToObject(accessor_p, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_p, "byteOffset", offset + tsSize);
+		cJSON_AddStringToObject(accessor_p, "type", "VEC3");
+		cJSON_AddNumberToObject(accessor_p, "count", keyframeCount);
+		cJSON_AddItemToArray(accessors, accessor_p);
+
+		cJSON* accessor_r = cJSON_CreateObject();
+		//cJSON_AddNumberToObject(accessor_r, "bufferView", i * 3 + 2);
+		cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
+		cJSON_AddNumberToObject(accessor_r, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset + pSize);
+		cJSON_AddStringToObject(accessor_r, "type", "VEC4");
+		cJSON_AddNumberToObject(accessor_r, "count", keyframeCount);
+		cJSON_AddItemToArray(accessors, accessor_r);
+
+		offset += tsSize + pSize + rSize;
 	}
 }
 
@@ -65,12 +163,19 @@ static cJSON* BuildSchema(GLTFAnimExportInfo* info, size_t binlen) {
 	cJSON_AddItemToObject(root, "nodes", nodes);
 
 	cJSON* animations = cJSON_CreateArray();
+	MakeAnimation(animations, info);
 	cJSON_AddItemToObject(root, "animations", animations);
 
 	cJSON* accessors = cJSON_CreateArray();
+	MakeAccessors(accessors, info);
 	cJSON_AddItemToObject(root, "accessors", accessors);
 
 	cJSON* bufferViews = cJSON_CreateArray();
+	cJSON* bufferView = cJSON_CreateObject();
+	cJSON_AddNumberToObject(bufferView, "buffer", 0);
+	cJSON_AddNumberToObject(bufferView, "byteOffset", 0);
+	cJSON_AddNumberToObject(bufferView, "byteLength", binlen);
+	cJSON_AddItemToArray(bufferViews, bufferView);
 	cJSON_AddItemToObject(root, "bufferViews", bufferViews);
 
 	cJSON* buffers = cJSON_CreateArray();

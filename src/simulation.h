@@ -20,7 +20,7 @@ class Simulation {
 		void Free();
 		Bool Step(Float64 dt);
 
-	private:
+	public:
 		Engine::KinematicsModel* model;
 		Engine::Animation* animation;
 		Engine::Animator* animator;

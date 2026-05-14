@@ -100,9 +100,15 @@ static void printhelp() {
 	printf("**\n");
 }
 
-struct AnimationData {
-
-};
+static void normalizeQuat(quat* q) {
+	Float32 len = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
+	if (len > 0.0f) {
+		q->x /= len;
+		q->y /= len;
+		q->z /= len;
+		q->w /= len;
+	}
+}
 
 #if TEST_BUILD
 int _main(int argc, char** argv);
@@ -179,22 +185,53 @@ int main(int argc, char** argv) {
 		goto exit;
 	}
 
+	GLTFAnimExportInfo gltfinfo = {};
+	gltfinfo.file = OUTPUT_FILE;
+	gltfinfo.mdl = sim.model;
+	gltfinfo.boneAnimations = (BoneAnimation*)rg_malloc(sizeof(BoneAnimation) * sim.model->GetBoneCount());
+
+	// VMD Animation in 30 fps, we sample it in 60 fps
+	Uint32 frames = (sim.animation->GetLastFrame() / sim.animation->GetFramerate() * 60.0f);
+	for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
+		gltfinfo.boneAnimations[i].name = sim.model->GetBone(i)->name;
+		gltfinfo.boneAnimations[i].keyframeCount = frames;
+		gltfinfo.boneAnimations[i].timestamps = (Float32*)rg_malloc(sizeof(Float32) * frames);
+		gltfinfo.boneAnimations[i].translations = (vec3*)rg_malloc(sizeof(vec3) * frames);
+		gltfinfo.boneAnimations[i].rotations = (quat*)rg_malloc(sizeof(quat) * frames);
+
+	}
+
 	printf("** Simulating...\n");
 	Uint32 frame = 0;
+	// Simulation steps
 	while (!sim.Step(1.0 / 60.0)) {
-		// Simulation step
+
+		// Save bone animation data
+		for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
+			gltfinfo.boneAnimations[i].timestamps[frame] = (Float32)frame * (1.0f / 60.0f);
+			gltfinfo.boneAnimations[i].translations[frame] = sim.model->GetBone(i)->position;
+			gltfinfo.boneAnimations[i].rotations[frame] = sim.model->GetBone(i)->rotation;
+			normalizeQuat(&gltfinfo.boneAnimations[i].rotations[frame]);
+		}
+
 		printf("\r** Frame: %d", frame);
 		fflush(stdout);
 		frame++;
+		if (frame > frames) {
+			printf("\r** Invalid operation at: %d", frame);
+			break;
+		}
 	}
 	printf("\n");
 
-	GLTFAnimExportInfo gltfinfo = {};
-	gltfinfo.file = OUTPUT_FILE;
-	gltfinfo.mdl  = sim.model;
-	gltfinfo.boneAnimations = (BoneAnimation*)malloc(sizeof(BoneAnimation) * sim.model->GetBoneCount());
-
 	ExportGLTF(&gltfinfo);
+
+	for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
+		rg_free(gltfinfo.boneAnimations[i].timestamps);
+		rg_free(gltfinfo.boneAnimations[i].translations);
+		rg_free(gltfinfo.boneAnimations[i].rotations);
+	}
+	rg_free(gltfinfo.boneAnimations);
 
 	sim.Free();
 

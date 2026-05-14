@@ -10,7 +10,7 @@ typedef struct BoneAnimation {
 	Uint32 _offset;
 	Float32* timestamps;
 	vec3* translations;
-	vec4* rotations;
+	quat* rotations;
 } BoneAnimation;
 
 typedef struct GLTFAnimExportInfo {
