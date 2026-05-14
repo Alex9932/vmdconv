@@ -452,6 +452,15 @@ namespace Engine {
     void FSWriter::Write(const void* ptr, size_t len) { fwrite(ptr, len, 1, this->m_handle); this->m_offset += len; }
     void FSWriter::Flush() { fflush(this->m_handle); }
 
+    void FSWriter::Seek(Uint32 flag, Uint32 offset) {
+        switch (flag) {
+            case RG_FS_SEEK_SET: { fseek(this->m_handle, offset, SEEK_SET); this->m_offset = offset;  break; }
+            case RG_FS_SEEK_CUR: { fseek(this->m_handle, offset, SEEK_CUR); this->m_offset += offset; break; }
+            case RG_FS_SEEK_END: { fseek(this->m_handle, offset, SEEK_END); this->m_offset = ftell(this->m_handle); break; }
+            default: { break; }
+		}
+    }
+
     FSMemoryInputStream::FSMemoryInputStream(void* ptr, size_t len) {
         this->m_ptr = ptr;
         this->m_len = len;

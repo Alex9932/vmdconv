@@ -157,6 +157,7 @@ namespace Engine {
             RG_DECLSPEC virtual ~FSWriter();
             RG_DECLSPEC void Write(const void* ptr, size_t len) override;
             RG_DECLSPEC virtual void Flush();
+            RG_DECLSPEC virtual void Seek(Uint32 flag, Uint32 offset);
             RG_FORCE_INLINE size_t GetOffset() { return m_offset; }
             RG_FORCE_INLINE FILE* GetHandle() { return m_handle; }
     };
