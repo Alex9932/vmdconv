@@ -15,18 +15,9 @@
 #include <allocator.h>
 #include <filesystem.h>
 #include <simulation.h>
+#include <gltfanim.h>
 
-static const char* CODE_NAMES[] = {
-	"Perlica",    // v1.0 ⚡
-	// For future use xD 
-	"Chen",       // v1.1 ⚔️
-	"DaPan",      // v1.2 🥟
-	"Endmin",     // v1.3 👨‍💻
-};
-
-#define VERSION  "1.0"
-#define CODENAME CODE_NAMES[0]
-#define BUILD    "14.05.2026"
+#include "version.h"
 
 #define TEST_BUILD 1
 
@@ -81,13 +72,17 @@ static void PrintBanner() {
 		"Have you seen my wrench?"
 	};
 
+	char versionString[128];
+	BuildVersionString(versionString, sizeof(versionString));
+
 	srand(time(NULL));
 
 	printf("\033[1;36m");
 	printf("**\n");
 	printf("** %s\n", quotes[rand() % 6]);
 	printf("**\n");
-	printf("** VMDCONV (Version %s \"%s\", build %s) by Alex9932\n", VERSION, CODENAME, BUILD);
+	//printf("** VMDCONV (Version %s \"%s\", build %s) by Alex9932\n", VERSION, CODENAME, BUILD);
+	printf("** VMDCONV %s by Alex9932\n", versionString);
 	printf("**  - Made with love for Talos - II pioneers.\n");
 	printf("**\n");
 	printf("\033[0m");
@@ -105,6 +100,9 @@ static void printhelp() {
 	printf("**\n");
 }
 
+struct AnimationData {
+
+};
 
 #if TEST_BUILD
 int _main(int argc, char** argv);
@@ -160,6 +158,10 @@ int main(int argc, char** argv) {
 	Engine::SetDefaultAllocator(alloc);
 	Engine::Filesystem_Initialize(NULL);
 
+
+	Simulation sim;
+	SimulationSetupInfo setupInfo = {};
+
 	// Invalid parameters
 	if (MDL_FILE == NULL || VMD_FILE == NULL || OUTPUT_FILE == NULL) {
 		printf("!! Invalid parameters! Use -h for help\n");
@@ -169,9 +171,6 @@ int main(int argc, char** argv) {
 	}
 
 	// Setup simulation
-
-	Simulation sim;
-	SimulationSetupInfo setupInfo = {};
 	setupInfo.model = MDL_FILE;
 	setupInfo.animation = VMD_FILE;
 	if (!sim.Setup(&setupInfo)) {
@@ -189,6 +188,13 @@ int main(int argc, char** argv) {
 		frame++;
 	}
 	printf("\n");
+
+	GLTFAnimExportInfo gltfinfo = {};
+	gltfinfo.file = OUTPUT_FILE;
+	gltfinfo.mdl  = sim.model;
+	gltfinfo.boneAnimations = (BoneAnimation*)malloc(sizeof(BoneAnimation) * sim.model->GetBoneCount());
+
+	ExportGLTF(&gltfinfo);
 
 	sim.Free();
 
