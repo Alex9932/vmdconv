@@ -25,7 +25,7 @@ static void WriteString(const char* path, const char* str) {
 }
 
 static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
-	//for (Sint32 i = mdl->GetBoneCount() - 1; i >= 0; i--) {
+	// Create nodes for each bone
 	for (Sint32 i = 0; i < mdl->GetBoneCount(); i++) {
 		Bone* bone = mdl->GetBone(i);
 		cJSON* node = cJSON_CreateObject();
@@ -46,11 +46,10 @@ static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
 		cJSON_AddItemToArray(nodes, node);
 	}
 
-	//for (Sint32 i = mdl->GetBoneCount() - 1; i >= 0; i--) {
+	// Add children information
 	for (Sint32 i = 0; i < mdl->GetBoneCount(); i++) {
 		Bone* bone = mdl->GetBone(i);
 		if (bone->parent != -1) {
-			//cJSON* parentNode = cJSON_GetArrayItem(nodes, mdl->GetBoneCount() - bone->parent);
 			cJSON* parentNode = cJSON_GetArrayItem(nodes, bone->parent);
 			cJSON* children = cJSON_GetObjectItem(parentNode, "children");
 			if (!children) {
@@ -115,16 +114,18 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 		size_t rSize = sizeof(vec4) * keyframeCount;
 
 		cJSON* accessor_ts = cJSON_CreateObject();
-		//cJSON_AddNumberToObject(accessor_ts, "bufferView", i * 3);
 		cJSON_AddNumberToObject(accessor_ts, "bufferView", 0);
 		cJSON_AddNumberToObject(accessor_ts, "componentType", 5126);
 		cJSON_AddNumberToObject(accessor_ts, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_ts, "type", "SCALAR");
 		cJSON_AddNumberToObject(accessor_ts, "count", keyframeCount);
+		Float32 min_val = 0.0f;
+		Float32 max_val = (Float32)(keyframeCount) * (1.0f / 60.0f) + 1;
+		cJSON_AddItemToObject(accessor_ts, "min", cJSON_CreateFloatArray(&min_val, 1));
+		cJSON_AddItemToObject(accessor_ts, "max", cJSON_CreateFloatArray(&max_val, 1));
 		cJSON_AddItemToArray(accessors, accessor_ts);
 
 		cJSON* accessor_p = cJSON_CreateObject();
-		//cJSON_AddNumberToObject(accessor_p, "bufferView", i * 3 + 1);
 		cJSON_AddNumberToObject(accessor_p, "bufferView", 0);
 		cJSON_AddNumberToObject(accessor_p, "componentType", 5126);
 		cJSON_AddNumberToObject(accessor_p, "byteOffset", offset + tsSize);
@@ -133,10 +134,9 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 		cJSON_AddItemToArray(accessors, accessor_p);
 
 		cJSON* accessor_r = cJSON_CreateObject();
-		//cJSON_AddNumberToObject(accessor_r, "bufferView", i * 3 + 2);
 		cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
 		cJSON_AddNumberToObject(accessor_r, "componentType", 5126);
-		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset + pSize);
+		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset + tsSize + pSize);
 		cJSON_AddStringToObject(accessor_r, "type", "VEC4");
 		cJSON_AddNumberToObject(accessor_r, "count", keyframeCount);
 		cJSON_AddItemToArray(accessors, accessor_r);
@@ -197,6 +197,7 @@ void ExportGLTF(GLTFAnimExportInfo* info) {
 	header.length  = 0; // Will be updated later after we calculate the actual length of the file
 
 	// Calculate binary chunk length
+	//size_t frames = (animation->GetLastFrame() / sim.animation->GetFramerate() * 60.0f);
 	size_t len = 0;
 	for (Uint32 i = 0; i < info->mdl->GetBoneCount(); i++) {
 		BoneAnimation* anim = &info->boneAnimations[i];
@@ -246,6 +247,7 @@ void ExportGLTF(GLTFAnimExportInfo* info) {
 	}
 
 	// Update header with actual length
+	//header.length = sizeof(GLTFHeader) + sizeof(GLTFChunk)*2 + jsonlen + padding + len;
 	header.length = writer.GetOffset();
 	writer.Seek(RG_FS_SEEK_SET, 0);
 	writer.Write(&header, sizeof(GLTFHeader));

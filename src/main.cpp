@@ -218,7 +218,8 @@ int main(int argc, char** argv) {
 		fflush(stdout);
 		frame++;
 		if (frame > frames) {
-			printf("\r** Invalid operation at: %d", frame);
+			printf("\n@@ Invalid operation at: %d", frame);
+			errors++;
 			break;
 		}
 	}
