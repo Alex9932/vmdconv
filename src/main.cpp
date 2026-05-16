@@ -204,8 +204,9 @@ int main(int argc, char** argv) {
 	printf("** Simulating...\n");
 	Uint32 frame = 0;
 	// Simulation steps
-	while (!sim.Step(1.0 / 60.0)) {
-
+	Bool runSim = true;
+	while (runSim) {
+		runSim = !sim.Step(1.0 / 60.0);
 		// Save bone animation data
 		for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
 			gltfinfo.boneAnimations[i].timestamps[frame] = (Float32)frame * (1.0f / 60.0f);

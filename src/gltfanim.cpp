@@ -120,28 +120,29 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 		cJSON_AddStringToObject(accessor_ts, "type", "SCALAR");
 		cJSON_AddNumberToObject(accessor_ts, "count", keyframeCount);
 		Float32 min_val = 0.0f;
-		Float32 max_val = (Float32)(keyframeCount) * (1.0f / 60.0f) + 1;
+		Float32 max_val = info->boneAnimations[i].timestamps[keyframeCount - 1];
 		cJSON_AddItemToObject(accessor_ts, "min", cJSON_CreateFloatArray(&min_val, 1));
 		cJSON_AddItemToObject(accessor_ts, "max", cJSON_CreateFloatArray(&max_val, 1));
 		cJSON_AddItemToArray(accessors, accessor_ts);
+		offset += tsSize;
 
 		cJSON* accessor_p = cJSON_CreateObject();
 		cJSON_AddNumberToObject(accessor_p, "bufferView", 0);
 		cJSON_AddNumberToObject(accessor_p, "componentType", 5126);
-		cJSON_AddNumberToObject(accessor_p, "byteOffset", offset + tsSize);
+		cJSON_AddNumberToObject(accessor_p, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_p, "type", "VEC3");
 		cJSON_AddNumberToObject(accessor_p, "count", keyframeCount);
 		cJSON_AddItemToArray(accessors, accessor_p);
+		offset += pSize;
 
 		cJSON* accessor_r = cJSON_CreateObject();
 		cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
 		cJSON_AddNumberToObject(accessor_r, "componentType", 5126);
-		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset + tsSize + pSize);
+		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_r, "type", "VEC4");
 		cJSON_AddNumberToObject(accessor_r, "count", keyframeCount);
 		cJSON_AddItemToArray(accessors, accessor_r);
-
-		offset += tsSize + pSize + rSize;
+		offset += rSize;
 	}
 }
 

@@ -11,7 +11,7 @@ static const char* CODE_NAMES[] = {
 
 #define VERSION  "1.0"
 #define CODENAME CODE_NAMES[0]
-#define BUILD    "14.05.2026"
+#define BUILD    "16.05.2026"
 
 static void BuildVersionString(char* buffer, size_t bufferSize) {
 	SDL_snprintf(buffer, bufferSize, "Version %s \"%s\" (build %s)", VERSION, CODENAME, BUILD);
