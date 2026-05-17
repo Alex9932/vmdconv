@@ -19,7 +19,7 @@ project "vmdconv"
 	targetdir "bin/%{cfg.buildcfg}"
 
 	dependson {  }
-	links {  }
+	links { "SDL3" }
 
 	includedirs { "src" }
 
