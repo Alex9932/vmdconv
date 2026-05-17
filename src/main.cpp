@@ -19,7 +19,7 @@
 
 #include "version.h"
 
-#define TEST_BUILD 1
+#define TEST_BUILD 0
 
 static uint32_t errors = 0;
 
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
 			gltfinfo.boneAnimations[i].rotations[frame] = sim.model->GetBone(i)->rotation;
 			gltfinfo.boneAnimations[i].rotations[frame].z = -gltfinfo.boneAnimations[i].rotations[frame].z;
 			gltfinfo.boneAnimations[i].rotations[frame].w = -gltfinfo.boneAnimations[i].rotations[frame].w;
-			//normalizeQuat(&gltfinfo.boneAnimations[i].rotations[frame]);
+			normalizeQuat(&gltfinfo.boneAnimations[i].rotations[frame]);
 		}
 
 		printf("\r** Frame: %d", frame);

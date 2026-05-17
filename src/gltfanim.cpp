@@ -152,13 +152,13 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 		offset += rSize;
 	}
 
-	cJSON* accessor_r = cJSON_CreateObject();
-	cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
-	cJSON_AddNumberToObject(accessor_r, "componentType", GLTF_TYPE_FLOAT);
-	cJSON_AddNumberToObject(accessor_r, "byteOffset", offset);
-	cJSON_AddStringToObject(accessor_r, "type", "MAT4");
-	cJSON_AddNumberToObject(accessor_r, "count", info->mdl->GetBoneCount());
-	cJSON_AddItemToArray(accessors, accessor_r);
+	cJSON* accessor_matrices = cJSON_CreateObject();
+	cJSON_AddNumberToObject(accessor_matrices, "bufferView", 0);
+	cJSON_AddNumberToObject(accessor_matrices, "componentType", GLTF_TYPE_FLOAT);
+	cJSON_AddNumberToObject(accessor_matrices, "byteOffset", offset);
+	cJSON_AddStringToObject(accessor_matrices, "type", "MAT4");
+	cJSON_AddNumberToObject(accessor_matrices, "count", info->mdl->GetBoneCount());
+	cJSON_AddItemToArray(accessors, accessor_matrices);
 	offset += info->mdl->GetBoneCount() * sizeof(mat4);
 }
 
@@ -217,7 +217,7 @@ static cJSON* BuildSchema(GLTFAnimExportInfo* info, size_t binlen) {
 	cJSON_AddItemToArray(buffers, buffer);
 	cJSON_AddItemToObject(root, "buffers", buffers);
 
-	WriteString("output.json", cJSON_Print(root));
+	//WriteString("output.json", cJSON_Print(root));
 
 	return root;
 
