@@ -5,10 +5,12 @@
 #include "kinematicsmodel.h"
 #include "animation.h"
 #include "animator.h"
+#include "allocator.h"
 
 typedef struct SimulationSetupInfo {
 	String model;
 	String animation;
+	String** names;
 } SimulationSetupInfo;
 
 class Simulation {
@@ -24,6 +26,9 @@ class Simulation {
 		Engine::KinematicsModel* model;
 		Engine::Animation* animation;
 		Engine::Animator* animator;
+
+	private:
+		Engine::LinearAllocator* stringAlloc;
 };
 
 #endif

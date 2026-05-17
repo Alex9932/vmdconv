@@ -17,6 +17,8 @@ typedef struct GLTFAnimExportInfo {
 	String file;
 	Engine::KinematicsModel* mdl;
 	BoneAnimation* boneAnimations;
+	mat4* offsets;
+	String* boneNames;
 } GLTFAnimExportInfo;
 
 void ExportGLTF(GLTFAnimExportInfo* info);

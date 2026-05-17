@@ -254,6 +254,44 @@ void PMDImporter::FreeRiggedModelData(FreeModelInfo* data) {
 	pmd_free((pmd_file*)data->userdata);
 }
 
+String PMDImporter::GetBoneName(ImportModelInfo* info, Uint32 id) {
+	pmd_file* pmd = (pmd_file*)info->userdata;
+	if (id >= pmd->bones_count) {
+		return NULL;
+	}
+	return pmd->bones[id].name;
+}
+
+static Bool IsValidString(String str) {
+	if (str == NULL) {
+		return false;
+	}
+	while (*str) {
+		// Check if the string contains non-ASCII characters,
+		// which may indicate that it's not a valid English bone name
+		if (*str & 0b10000000) {
+			return false;
+		}
+		str++;
+	}
+	return true;
+}
+
+String PMDImporter::GetENBoneName(ImportModelInfo* info, Uint32 id) {
+	pmd_file* pmd = (pmd_file*)info->userdata;
+	if (id >= pmd->bones_count) {
+		return NULL;
+	}
+	if (!pmd->is_extended) {
+		return NULL;
+	}
+	String name = pmd->e_bones[id];
+	if (!IsValidString(name)) {
+		return NULL;
+	}
+	return name;
+}
+
 // TODO: Rewrite this
 KinematicsModel* PMDImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {
 	pmd_file* pmd = (pmd_file*)iminfo->userdata; //pmd_load(file);
@@ -561,6 +599,22 @@ void PMXImporter::FreeRiggedModelData(FreeModelInfo* data) {
 	rg_free(data->extra->mat_names);
 	rg_free(data->extra->mesh_names);
 	pmx_free((pmx_file*)data->userdata);
+}
+
+String PMXImporter::GetBoneName(ImportModelInfo* info, Uint32 id) {
+	pmx_file* pmx = (pmx_file*)info->userdata;
+	if (id >= pmx->bone_count) {
+		return NULL;
+	}
+	return pmx->bones[id].name.data;
+}
+
+String PMXImporter::GetENBoneName(ImportModelInfo* info, Uint32 id) {
+	pmx_file* pmx = (pmx_file*)info->userdata;
+	if (id >= pmx->bone_count) {
+		return NULL;
+	}
+	return pmx->bones[id].name_en.data;
 }
 
 Engine::KinematicsModel* PMXImporter::ImportKinematicsModel(ImportModelInfo* iminfo) {

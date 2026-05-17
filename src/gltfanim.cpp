@@ -5,6 +5,13 @@
 
 #include <cJSON.h>
 
+#define GLTF_TYPE_SINT8  5120
+#define GLTF_TYPE_UINT8  5121
+#define GLTF_TYPE_SINT16 5122
+#define GLTF_TYPE_UINT16 5123
+#define GLTF_TYPE_UINT32 5125
+#define GLTF_TYPE_FLOAT  5126
+
 struct GLTFHeader {
 	Uint32 magic;
 	Uint32 version;
@@ -24,7 +31,7 @@ static void WriteString(const char* path, const char* str) {
 	}
 }
 
-static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
+static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl, String* names) {
 	// Create nodes for each bone
 	for (Sint32 i = 0; i < mdl->GetBoneCount(); i++) {
 		Bone* bone = mdl->GetBone(i);
@@ -36,7 +43,7 @@ static void MakeNodeHierarchy(cJSON* nodes, Engine::KinematicsModel* mdl) {
 		cJSON* r = cJSON_CreateFloatArray(bone->offset_rot.v4.array, 4); // Rotation
 		cJSON* s = cJSON_CreateFloatArray(scale, 3); // Scale
 
-		cJSON_AddStringToObject(node, "name", bone->name);
+		cJSON_AddStringToObject(node, "name", names[i]);// bone->name);
 		cJSON_AddItemToObject(node, "translation", p);
 		cJSON_AddItemToObject(node, "rotation", r);
 		cJSON_AddItemToObject(node, "scale", s);
@@ -115,7 +122,7 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 
 		cJSON* accessor_ts = cJSON_CreateObject();
 		cJSON_AddNumberToObject(accessor_ts, "bufferView", 0);
-		cJSON_AddNumberToObject(accessor_ts, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_ts, "componentType", GLTF_TYPE_FLOAT);
 		cJSON_AddNumberToObject(accessor_ts, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_ts, "type", "SCALAR");
 		cJSON_AddNumberToObject(accessor_ts, "count", keyframeCount);
@@ -128,7 +135,7 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 
 		cJSON* accessor_p = cJSON_CreateObject();
 		cJSON_AddNumberToObject(accessor_p, "bufferView", 0);
-		cJSON_AddNumberToObject(accessor_p, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_p, "componentType", GLTF_TYPE_FLOAT);
 		cJSON_AddNumberToObject(accessor_p, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_p, "type", "VEC3");
 		cJSON_AddNumberToObject(accessor_p, "count", keyframeCount);
@@ -137,13 +144,34 @@ static void MakeAccessors(cJSON* accessors, GLTFAnimExportInfo* info) {
 
 		cJSON* accessor_r = cJSON_CreateObject();
 		cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
-		cJSON_AddNumberToObject(accessor_r, "componentType", 5126);
+		cJSON_AddNumberToObject(accessor_r, "componentType", GLTF_TYPE_FLOAT);
 		cJSON_AddNumberToObject(accessor_r, "byteOffset", offset);
 		cJSON_AddStringToObject(accessor_r, "type", "VEC4");
 		cJSON_AddNumberToObject(accessor_r, "count", keyframeCount);
 		cJSON_AddItemToArray(accessors, accessor_r);
 		offset += rSize;
 	}
+
+	cJSON* accessor_r = cJSON_CreateObject();
+	cJSON_AddNumberToObject(accessor_r, "bufferView", 0);
+	cJSON_AddNumberToObject(accessor_r, "componentType", GLTF_TYPE_FLOAT);
+	cJSON_AddNumberToObject(accessor_r, "byteOffset", offset);
+	cJSON_AddStringToObject(accessor_r, "type", "MAT4");
+	cJSON_AddNumberToObject(accessor_r, "count", info->mdl->GetBoneCount());
+	cJSON_AddItemToArray(accessors, accessor_r);
+	offset += info->mdl->GetBoneCount() * sizeof(mat4);
+}
+
+static void MakeSkins(cJSON* skins, GLTFAnimExportInfo* info) {
+	Uint32 accessorID = info->mdl->GetBoneCount() * 3; // Each bone has 3 accessors (timestamps, translations, rotations)
+	cJSON* skin = cJSON_CreateObject();
+	cJSON_AddNumberToObject(skin, "inverseBindMatrices", accessorID);
+	cJSON* joints = cJSON_CreateArray();
+	for (size_t i = 0; i < info->mdl->GetBoneCount(); i++) {
+		cJSON_AddItemToArray(joints, cJSON_CreateNumber(i));
+	}
+	cJSON_AddItemToObject(skin, "joints", joints);
+	cJSON_AddItemToArray(skins, skin);
 }
 
 static cJSON* BuildSchema(GLTFAnimExportInfo* info, size_t binlen) {
@@ -160,8 +188,12 @@ static cJSON* BuildSchema(GLTFAnimExportInfo* info, size_t binlen) {
 	cJSON_AddItemToObject(root, "asset", asset);
 
 	cJSON* nodes = cJSON_CreateArray();
-	MakeNodeHierarchy(nodes, info->mdl);
+	MakeNodeHierarchy(nodes, info->mdl, info->boneNames);
 	cJSON_AddItemToObject(root, "nodes", nodes);
+
+	cJSON* skins = cJSON_CreateArray();
+	MakeSkins(skins, info);
+	cJSON_AddItemToObject(root, "skins", skins);
 
 	cJSON* animations = cJSON_CreateArray();
 	MakeAnimation(animations, info);
@@ -206,6 +238,7 @@ void ExportGLTF(GLTFAnimExportInfo* info) {
 		len += sizeof(vec3) * anim->keyframeCount;    // translations
 		len += sizeof(vec4) * anim->keyframeCount;    // rotations
 	}
+	len += sizeof(mat4) * info->mdl->GetBoneCount();  // bone offset matrices
 
 	Engine::FSWriter writer(info->file);
 
@@ -246,6 +279,9 @@ void ExportGLTF(GLTFAnimExportInfo* info) {
 		writer.Write(anim->translations, sizeof(vec3) * anim->keyframeCount);
 		writer.Write(anim->rotations, sizeof(vec4) * anim->keyframeCount);
 	}
+
+	// Write bone offset matrices
+	writer.Write(info->offsets, sizeof(mat4) * info->mdl->GetBoneCount());
 
 	// Update header with actual length
 	//header.length = sizeof(GLTFHeader) + sizeof(GLTFChunk)*2 + jsonlen + padding + len;

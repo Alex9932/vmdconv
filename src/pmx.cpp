@@ -154,7 +154,8 @@ static void _pmx_readVertex(Sint32 id, pmx_file* pmx, Engine::FSReader* reader, 
 static pmx_text _pmx_readText(Engine::FSReader* reader) {
 	pmx_text text;
 	text.len = reader->ReadU32();
-	text.data = (char*)rg_malloc(text.len);
+	text.data = (char*)rg_malloc(text.len + 1);
+	SDL_memset(text.data, 0, text.len + 1);
 	reader->Read(text.data, text.len);
 	return text;
 }

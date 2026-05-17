@@ -23,9 +23,10 @@
 
 static uint32_t errors = 0;
 
-static const char* MDL_FILE = NULL;
-static const char* VMD_FILE = NULL;
+static const char* MDL_FILE    = NULL;
+static const char* VMD_FILE    = NULL;
 static const char* OUTPUT_FILE = NULL;
+static Bool        VISUALIZE   = false;
 
 // Utility functions for reading/writing files - not used yet, but can be useful for future features
 // TODO: Move this to a separate file
@@ -94,6 +95,7 @@ static void printhelp() {
 	printf("**   -mdl <pmd/pmx file>   For animation simulation\n");
 	printf("**   -vmd <vmd file>       Animation file\n");
 	printf("**   -o <output file>      gltf output file\n");
+	//printf("**   -v                    Visualize animation (not supported on headless systems)\n");
 	printf("**   -h                    Show this help message\n");
 	printf("** Usage example:\n");
 	printf("**   vmdconv -mdl model.pmd -vmd animation.vmd -o output.glb\n");
@@ -118,7 +120,7 @@ int main(int argc, char** argv) {
 
 	int test_argc = 7;
 	//const char* test_argv[] = { argv[0], "-mdl", "vmd/Model/Rin_Kagamine.pmd", "-vmd", "vmd/wavefile_v2.vmd", "-o", "anim.glb" };
-	const char* test_argv[] = { argv[0], "-mdl", "..\\build\\vmd\\Model\\Miku_Hatsune.pmd", "-vmd", "..\\build\\vmd\\wavefile_v2.vmd", "-o", "anim.glb" };
+	const char* test_argv[] = { argv[0], "-mdl", "..\\build\\vmd\\Model\\Miku_Hatsune.pmd", "-vmd", "..\\build\\vmd\\player\\sneaking.vmd", "-o", "anim.glb" };
 
 	_main(test_argc, (char**)test_argv);
 }
@@ -146,6 +148,11 @@ int main(int argc, char** argv) {
 			VMD_FILE = argv[i + 1];
 			i++;
 		}
+#if 0
+		else if (strcmp(argv[i], "-v") == 0) {
+			VISUALIZE = true;
+		}
+#endif
 		else if (strcmp(argv[i], "-squad") == 0) {
 			printf("** Executing \"squad\" command\n");
 			printf("\033[1;36m");
@@ -164,6 +171,12 @@ int main(int argc, char** argv) {
 	Engine::SetDefaultAllocator(alloc);
 	Engine::Filesystem_Initialize(NULL);
 
+	if (VISUALIZE) {
+		printf("@@ Used -v flag\n");
+		printf("** Setup rendering context\n");
+
+	}
+
 
 	Simulation sim;
 	SimulationSetupInfo setupInfo = {};
@@ -176,9 +189,12 @@ int main(int argc, char** argv) {
 		goto exit;
 	}
 
+	String* names = NULL;
+
 	// Setup simulation
 	setupInfo.model = MDL_FILE;
 	setupInfo.animation = VMD_FILE;
+	setupInfo.names = &names;
 	if (!sim.Setup(&setupInfo)) {
 		printf("** Simulation setup failed\n");
 		errors++;
@@ -189,6 +205,7 @@ int main(int argc, char** argv) {
 	gltfinfo.file = OUTPUT_FILE;
 	gltfinfo.mdl = sim.model;
 	gltfinfo.boneAnimations = (BoneAnimation*)rg_malloc(sizeof(BoneAnimation) * sim.model->GetBoneCount());
+	gltfinfo.boneNames = names;
 
 	// VMD Animation in 30 fps, we sample it in 60 fps
 	Uint32 frames = (sim.animation->GetLastFrame() / sim.animation->GetFramerate() * 60.0f);
@@ -198,7 +215,11 @@ int main(int argc, char** argv) {
 		gltfinfo.boneAnimations[i].timestamps = (Float32*)rg_malloc(sizeof(Float32) * frames);
 		gltfinfo.boneAnimations[i].translations = (vec3*)rg_malloc(sizeof(vec3) * frames);
 		gltfinfo.boneAnimations[i].rotations = (quat*)rg_malloc(sizeof(quat) * frames);
+	}
+	gltfinfo.offsets = (mat4*)rg_malloc(sizeof(mat4) * sim.model->GetBoneCount());
 
+	for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
+		gltfinfo.offsets[i] = sim.model->GetBones()[i].offset;
 	}
 
 	printf("** Simulating...\n");
@@ -211,8 +232,11 @@ int main(int argc, char** argv) {
 		for (size_t i = 0; i < sim.model->GetBoneCount(); i++) {
 			gltfinfo.boneAnimations[i].timestamps[frame] = (Float32)frame * (1.0f / 60.0f);
 			gltfinfo.boneAnimations[i].translations[frame] = sim.model->GetBone(i)->position;
+			gltfinfo.boneAnimations[i].translations[frame].z = -gltfinfo.boneAnimations[i].translations[frame].z;
 			gltfinfo.boneAnimations[i].rotations[frame] = sim.model->GetBone(i)->rotation;
-			normalizeQuat(&gltfinfo.boneAnimations[i].rotations[frame]);
+			gltfinfo.boneAnimations[i].rotations[frame].z = -gltfinfo.boneAnimations[i].rotations[frame].z;
+			gltfinfo.boneAnimations[i].rotations[frame].w = -gltfinfo.boneAnimations[i].rotations[frame].w;
+			//normalizeQuat(&gltfinfo.boneAnimations[i].rotations[frame]);
 		}
 
 		printf("\r** Frame: %d", frame);
@@ -233,7 +257,9 @@ int main(int argc, char** argv) {
 		rg_free(gltfinfo.boneAnimations[i].translations);
 		rg_free(gltfinfo.boneAnimations[i].rotations);
 	}
+	rg_free(gltfinfo.offsets);
 	rg_free(gltfinfo.boneAnimations);
+	rg_free(*setupInfo.names);
 
 	sim.Free();
 
